@@ -1,31 +1,15 @@
-const { SlashCommandBuilder } = require('discord.js');
-const { pebbleStartServer } = require('../utils/pebbleAPI');
+import { SlashCommandBuilder } from "discord.js";
+import { startServer } from "../utils/pebbleAPI.js";
 
-module.exports = {
+export default {
   data: new SlashCommandBuilder()
-    .setName('start_srv')
-    .setDescription('Start the Minecraft server')
-    .setDMPermission(false),
+    .setName("start_srv")
+    .setDescription("Starts the Minecraft server"),
 
   async execute(interaction) {
-    await interaction.reply({ content: 'Checking permissions...', ephemeral: true });
+    await interaction.deferReply();
 
-    const allowedRole = process.env.MINECRAFT_ROLE_ID;
-    if (!interaction.member.roles.cache.has(allowedRole)) {
-      return interaction.editReply('❌ You don’t have permission to start the server.');
-    }
-
-    interaction.editReply('🟡 Starting server…');
-
-    try {
-      const result = await pebbleStartServer();
-      if (result.success) {
-        return interaction.editReply('🟢 **Server is now starting!** It may take 2–5 minutes.');
-      } else {
-        return interaction.editReply('❌ Failed to start server: `' + result.message + '`');
-      }
-    } catch (err) {
-      return interaction.editReply('❌ Error starting server.');
-    }
-  },
+    const result = await startServer();
+    return interaction.editReply(result);
+  }
 };
