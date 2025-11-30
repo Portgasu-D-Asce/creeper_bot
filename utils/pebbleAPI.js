@@ -1,62 +1,48 @@
-const fetch = require('node-fetch');
+import fetch from "node-fetch";
 
-const API = process.env.PEBBLE_API_KEY;
-const SRV = process.env.PEBBLE_SERVER_ID;
-const BASE = `https://panel.pebblehost.com/api/client/servers/${SRV}`;
+const API_KEY = process.env.PEBBLE_API_KEY;
+const SERVER_ID = process.env.PEBBLE_SERVER_ID;
 
-async function pebbleStartServer() {
-  const res = await fetch(`${BASE}/power`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${API}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ signal: 'start' }),
+const BASE_URL = `https://api.pebblehost.com/prod/server/${SERVER_ID}`;
+
+export async function startServer() {
+  const res = await fetch(`${BASE_URL}/power`, {
+    method: "POST",
+    headers: { "Authorization": API_KEY },
+    body: JSON.stringify({ signal: "start" })
   });
 
-  if (res.ok) return { success: true };
-  return { success: false, message: await res.text() };
+  return "🟢 Server start requested!";
 }
 
-async function pebbleStopServer() {
-  const res = await fetch(`${BASE}/power`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${API}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ signal: 'stop' }),
+export async function stopServer() {
+  const res = await fetch(`${BASE_URL}/power`, {
+    method: "POST",
+    headers: { "Authorization": API_KEY },
+    body: JSON.stringify({ signal: "stop" })
   });
 
-  if (res.ok) return { success: true };
-  return { success: false, message: await res.text() };
+  return "🔴 Server stop requested!";
 }
 
-async function pebbleServerStatus() {
-  const res = await fetch(`${BASE}`, {
-    headers: { Authorization: `Bearer ${API}` }
+export async function getServerStatus() {
+  const res = await fetch(`${BASE_URL}`, {
+    headers: { "Authorization": API_KEY }
   });
+
+  if (!res.ok) return "Server unreachable.";
 
   const data = await res.json();
-
-  return {
-    status: data?.attributes?.current_state || 'unknown',
-    playersOnline: data?.attributes?.players || 0,
-  };
+  return `Status: **${data.status}**`;
 }
 
-async function pebbleListPlayers() {
-  const res = await fetch(`${BASE}`, {
-    headers: { Authorization: `Bearer ${API}` }
+export async function getPlayerList() {
+  const res = await fetch(`${BASE_URL}`, {
+    headers: { "Authorization": API_KEY }
   });
 
-  const data = await res.json();
-  return data?.attributes?.player_list || [];
-}
+  if (!res.ok) return [];
 
-module.exports = {
-  pebbleStartServer,
-  pebbleStopServer,
-  pebbleServerStatus,
-  pebbleListPlayers
-};
+  const data = await res.json();
+  return data.players || [];
+}
