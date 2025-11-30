@@ -1,24 +1,15 @@
-const { SlashCommandBuilder } = require('discord.js');
-const { pebbleServerStatus } = require('../utils/pebbleAPI');
+import { SlashCommandBuilder } from "discord.js";
+import { getServerStatus } from "../utils/pebbleAPI.js";
 
-module.exports = {
+export default {
   data: new SlashCommandBuilder()
-    .setName('status')
-    .setDescription('Check the server status')
-    .setDMPermission(false),
+    .setName("status")
+    .setDescription("Checks Minecraft server status"),
 
   async execute(interaction) {
-    await interaction.reply('⏳ Checking server status...');
+    await interaction.deferReply();
 
-    try {
-      const status = await pebbleServerStatus();
-
-      return interaction.editReply(
-        `📡 **Server Status:** ${status.status}\n` +
-        `🟢 **Online Players:** ${status.playersOnline}`
-      );
-    } catch (err) {
-      return interaction.editReply('❌ Error fetching server status.');
-    }
-  },
+    const status = await getServerStatus();
+    return interaction.editReply(status);
+  }
 };
