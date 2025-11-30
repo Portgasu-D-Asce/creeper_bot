@@ -1,83 +1,54 @@
+import { Client, GatewayIntentBits, REST, Routes } from "discord.js";
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
 import express from "express";
-import {
-  Client,
-  GatewayIntentBits,
-  Collection,
-  REST,
-  Routes
-} from "discord.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const app = express();
+app.get("/", (_, res) => res.send("Bot is running"));
+app.listen(10000, () => console.log("Express server running."));
 
-// ENV VARS
-const TOKEN = process.env.BOT_TOKEN;
-const APP_ID = process.env.APPLICATION_ID;
-const GUILD_ID = process.env.GUILD_ID;
+const __dirname = path.resolve();
 
-// DISCORD CLIENT
+// Environment vars
+const TOKEN = process.env.DISCORD_TOKEN;
+const CLIENT_ID = process.env.DISCORD_APPLICATION_ID;
+const GUILD_ID = process.env.DISCORD_GUILD_ID;
+
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
+  intents: [GatewayIntentBits.Guilds],
 });
 
-client.commands = new Collection();
+client.once("clientReady", () => {
+  console.log(`Bot logged in as ${client.user.tag}`);
+});
 
-// LOAD COMMAND FILES
+// Load command files
+const commands = [];
 const commandsPath = path.join(__dirname, "commands");
-const commandFiles = fs.readdirSync(commandsPath)
-  .filter(file => file.endsWith(".js"));
-
-const slashCommandsJSON = [];
+const commandFiles = fs.readdirSync(commandsPath);
 
 for (const file of commandFiles) {
   const filePath = path.join(commandsPath, file);
-  const command = (await import(filePath)).default;
+  const command = (await import(`file://${filePath}`)).default;
 
-  client.commands.set(command.data.name, command);
-  slashCommandsJSON.push(command.data.toJSON());
-}
-
-client.once("ready", () => {
-  console.log(`Logged in as ${client.user.tag}`);
-});
-
-// HANDLE COMMANDS
-client.on("interactionCreate", async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
-
-  const command = client.commands.get(interaction.commandName);
-  if (!command) return;
-
-  try {
-    await command.execute(interaction);
-  } catch (error) {
-    console.error(error);
-    await interaction.reply("❌ Command failed.");
+  if (command?.data) {
+    commands.push(command.data.toJSON());
   }
-});
-
-// REGISTER SLASH COMMANDS
-const rest = new REST({ version: "10" }).setToken(TOKEN);
-
-try {
-  console.log("Registering slash commands...");
-  await rest.put(
-    Routes.applicationGuildCommands(APP_ID, GUILD_ID),
-    { body: slashCommandsJSON }
-  );
-  console.log("Slash commands registered!");
-} catch (error) {
-  console.error("Error registering commands:", error);
 }
 
-client.login(TOKEN);
+// Register commands
+const rest = new REST().setToken(TOKEN);
 
-// FAKE WEB SERVER FOR RENDER
-const app = express();
-app.get("/", (req, res) => res.send("Bot Running"));
-app.listen(process.env.PORT || 3000, () =>
-  console.log("Express keepalive server running.")
-);
+async function registerCommands() {
+  try {
+    console.log("Registering Discord slash commands...");
+    await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), {
+      body: commands,
+    });
+    console.log("Slash commands registered.");
+  } catch (error) {
+    console.error("Error registering commands:", error);
+  }
+}
+
+client.login(TOKEN).then(() => registerCommands());
