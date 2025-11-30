@@ -1,64 +1,51 @@
-import { Client, GatewayIntentBits, Collection, REST, Routes } from "discord.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import express from "express"; // Fake server for Render
+import express from "express";
+import {
+  Client,
+  GatewayIntentBits,
+  Collection,
+  REST,
+  Routes
+} from "discord.js";
 
-// Paths
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ENV Vars
+// ENV VARS
 const TOKEN = process.env.BOT_TOKEN;
-const CLIENT_ID = process.env.APPLICATION_ID;
+const APP_ID = process.env.APPLICATION_ID;
 const GUILD_ID = process.env.GUILD_ID;
 
-// Create Discord Client
+// DISCORD CLIENT
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
+  intents: [GatewayIntentBits.Guilds]
 });
 
 client.commands = new Collection();
 
-// Load Commands
-const commands = [];
+// LOAD COMMAND FILES
 const commandsPath = path.join(__dirname, "commands");
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith(".js"));
+const commandFiles = fs.readdirSync(commandsPath)
+  .filter(file => file.endsWith(".js"));
+
+const slashCommandsJSON = [];
 
 for (const file of commandFiles) {
-  const command = await import(`./commands/${file}`);
-  client.commands.set(command.default.name, command.default);
+  const filePath = path.join(commandsPath, file);
+  const command = (await import(filePath)).default;
 
-  commands.push({
-    name: command.default.name,
-    description: command.default.description
-  });
+  client.commands.set(command.data.name, command);
+  slashCommandsJSON.push(command.data.toJSON());
 }
 
-// Register Commands on Discord
-const rest = new REST({ version: "10" }).setToken(TOKEN);
-
-async function registerCommands() {
-  try {
-    console.log("Registering slash commands...");
-    await rest.put(
-      Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-      { body: commands }
-    );
-    console.log("Slash commands registered.");
-  } catch (err) {
-    console.error("Error registering commands:", err);
-  }
-}
-
-// Bot Ready Event
-client.on("ready", () => {
-  console.log(`Bot logged in as ${client.user.tag}`);
-  registerCommands();
+client.once("ready", () => {
+  console.log(`Logged in as ${client.user.tag}`);
 });
 
-// Slash Command Handler
-client.on("interactionCreate", async interaction => {
+// HANDLE COMMANDS
+client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
   const command = client.commands.get(interaction.commandName);
@@ -66,21 +53,31 @@ client.on("interactionCreate", async interaction => {
 
   try {
     await command.execute(interaction);
-  } catch (err) {
-    console.error(err);
-    await interaction.reply({
-      content: "❌ Internal error.",
-      ephemeral: true
-    });
+  } catch (error) {
+    console.error(error);
+    await interaction.reply("❌ Command failed.");
   }
 });
 
-// Fake web server (required for Render free tier)
-const app = express();
-app.get("/", (req, res) => res.send("Bot is running OK."));
-app.listen(process.env.PORT || 3000, () => {
-  console.log("Fake web server started.");
-});
+// REGISTER SLASH COMMANDS
+const rest = new REST({ version: "10" }).setToken(TOKEN);
 
-// Login
+try {
+  console.log("Registering slash commands...");
+  await rest.put(
+    Routes.applicationGuildCommands(APP_ID, GUILD_ID),
+    { body: slashCommandsJSON }
+  );
+  console.log("Slash commands registered!");
+} catch (error) {
+  console.error("Error registering commands:", error);
+}
+
 client.login(TOKEN);
+
+// FAKE WEB SERVER FOR RENDER
+const app = express();
+app.get("/", (req, res) => res.send("Bot Running"));
+app.listen(process.env.PORT || 3000, () =>
+  console.log("Express keepalive server running.")
+);
