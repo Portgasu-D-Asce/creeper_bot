@@ -9,14 +9,13 @@ export default {
 
     if (!interaction.member.roles.cache.has(adminRole)) {
       return interaction.reply({
-        content: "❌ You don't have permission to start the server.",
+        content: "❌ You are not allowed to start the server.",
         ephemeral: true
       });
     }
 
-    await interaction.reply("🟡 Starting the server...");
+    await interaction.reply("🟡 Sending start signal...");
     await startServer();
-
     return interaction.followUp("🟢 Server start signal sent!");
   }
 };
