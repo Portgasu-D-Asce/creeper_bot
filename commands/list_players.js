@@ -1,25 +1,21 @@
-const { SlashCommandBuilder } = require('discord.js');
-const { pebbleListPlayers } = require('../utils/pebbleAPI');
+import { SlashCommandBuilder } from "discord.js";
+import { getPlayerList } from "../utils/pebbleAPI.js";
 
-module.exports = {
+export default {
   data: new SlashCommandBuilder()
-    .setName('list_players')
-    .setDescription('Show the list of online players')
-    .setDMPermission(false),
-
+    .setName("list_players")
+    .setDescription("Shows currently online players"),
+  
   async execute(interaction) {
-    await interaction.reply('🔍 Fetching online players...');
+    await interaction.deferReply();
 
-    try {
-      const players = await pebbleListPlayers();
+    const players = await getPlayerList();
 
-      if (!players || players.length === 0) {
-        return interaction.editReply('👤 No players are currently online.');
-      }
-
-      return interaction.editReply('🟢 **Online Players:**\n' + players.join('\n'));
-    } catch (err) {
-      return interaction.editReply('❌ Failed to fetch players.');
+    if (!players || players.length === 0) {
+      return interaction.editReply("No players are currently online.");
     }
-  },
+
+    const names = players.map(p => `• ${p}`).join("\n");
+    return interaction.editReply(`**Online Players:**\n${names}`);
+  }
 };
