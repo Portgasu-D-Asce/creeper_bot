@@ -3,12 +3,15 @@ import fetch from "node-fetch";
 const API_KEY = process.env.PEBBLE_API_KEY;
 const SERVER_ID = process.env.PEBBLE_SERVER_ID;
 
-const BASE_URL = `https://api.pebblehost.com/prod/server/${SERVER_ID}`;
+const BASE = `https://api.pebblehost.com/v2/client/servers/${SERVER_ID}`;
 
 export async function startServer() {
-  const res = await fetch(`${BASE_URL}/power`, {
+  await fetch(`${BASE}/power`, {
     method: "POST",
-    headers: { "Authorization": API_KEY },
+    headers: {
+      "Authorization": API_KEY,
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify({ signal: "start" })
   });
 
@@ -16,33 +19,34 @@ export async function startServer() {
 }
 
 export async function stopServer() {
-  const res = await fetch(`${BASE_URL}/power`, {
+  await fetch(`${BASE}/power`, {
     method: "POST",
-    headers: { "Authorization": API_KEY },
+    headers: {
+      "Authorization": API_KEY,
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify({ signal: "stop" })
   });
 
   return "🔴 Server stop requested!";
 }
 
-export async function getServerStatus() {
-  const res = await fetch(`${BASE_URL}`, {
+export async function getStatus() {
+  const res = await fetch(`${BASE}`, {
     headers: { "Authorization": API_KEY }
   });
 
-  if (!res.ok) return "Server unreachable.";
+  if (!res.ok) return "❌ Error fetching status.";
 
-  const data = await res.json();
-  return `Status: **${data.status}**`;
+  const json = await res.json();
+  return `Server Status: **${json.status}**`;
 }
 
-export async function getPlayerList() {
-  const res = await fetch(`${BASE_URL}`, {
+export async function listPlayers() {
+  const res = await fetch(`${BASE}`, {
     headers: { "Authorization": API_KEY }
   });
 
-  if (!res.ok) return [];
-
-  const data = await res.json();
-  return data.players || [];
+  const json = await res.json();
+  return json.players || [];
 }
