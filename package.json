@@ -2,8 +2,10 @@
   "name": "creeper_bot",
   "version": "1.0.0",
   "type": "module",
+  "main": "bot.js",
   "dependencies": {
     "discord.js": "^14.15.0",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "express": "^4.18.2"
   }
 }
