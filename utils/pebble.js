@@ -3,30 +3,43 @@ import fetch from "node-fetch";
 const API_KEY = process.env.PEBBLE_API_KEY;
 const SERVER_ID = process.env.PEBBLE_SERVER_ID;
 
-const base = "https://api.pebblehost.com/v2/client/servers";
+// Pebble API base (client API)
+const BASE = `https://api.pebblehost.com/v2/client/servers/${SERVER_ID}`;
 
-async function call(endpoint, method = "GET") {
-  return fetch(`${base}/${SERVER_ID}${endpoint}`, {
-    method,
+export async function startServer() {
+  return await fetch(`${BASE}/power`, {
+    method: "POST",
     headers: {
-      "Authorization": API_KEY,
+      Authorization: API_KEY,
       "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ signal: "start" })
+  }).then(r => r.json());
+}
+
+export async function stopServer() {
+  return await fetch(`${BASE}/power`, {
+    method: "POST",
+    headers: {
+      Authorization: API_KEY,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ signal: "stop" })
+  }).then(r => r.json());
+}
+
+export async function getStatus() {
+  return await fetch(`${BASE}`, {
+    headers: {
+      Authorization: API_KEY
     }
-  }).then(res => res.json());
+  }).then(r => r.json());
 }
 
-export function startServer() {
-  return call("/power", "POST", JSON.stringify({ signal: "start" }));
-}
-
-export function stopServer() {
-  return call("/power", "POST", JSON.stringify({ signal: "stop" }));
-}
-
-export function getStatus() {
-  return call("");
-}
-
-export function listOnlinePlayers() {
-  return call("/players");
+export async function listOnlinePlayers() {
+  return await fetch(`${BASE}/players`, {
+    headers: {
+      Authorization: API_KEY
+    }
+  }).then(r => r.json());
 }
