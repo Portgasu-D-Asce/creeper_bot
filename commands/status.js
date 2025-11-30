@@ -1,15 +1,14 @@
 import { SlashCommandBuilder } from "discord.js";
-import { getServerStatus } from "../utils/pebbleAPI.js";
+import { getStatus } from "../utils/pebbleAPI.js";
 
 export default {
   data: new SlashCommandBuilder()
     .setName("status")
-    .setDescription("Checks Minecraft server status"),
+    .setDescription("Get server status"),
 
   async execute(interaction) {
     await interaction.deferReply();
-
-    const status = await getServerStatus();
-    return interaction.editReply(status);
+    const msg = await getStatus();
+    await interaction.editReply(msg);
   }
 };
